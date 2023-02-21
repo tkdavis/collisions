@@ -5,36 +5,39 @@ const centerY = canvas.height / 2;
 const radius = 10;
 let circles = [];
 
-initCircles();
+class Circle {
+    constructor(x, y, radius, color, velocity) {
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.color = color;
+        this.velocity = velocity;
+    }
+
+    checkCollision(other) {
+        if (getDistance(other, this) < this.radius * 2) {
+            this.changeColor();
+            other.changeColor();
+        }
+    }
+
+    changeColor() {
+        this.color = 'red'
+    }
+}
 
 function initCircles() {
-    let circle1 = {
-        x: 100,
-        y: 100,
-        radius: radius,
-        color: "green",
-        velocity: {x: 1, y: 1, magnitude: 1}
-    }
-    
-    let circle2 = {
-        x: 500,
-        y: 500,
-        radius: radius,
-        color: "green",
-        velocity: {x: -1, y: -1, magnitude: 1}
-    }
+    let circle1 = new Circle(100, 100, radius, 'green', {x: 1, y: 1, magnitude: 1});
+    let circle2 = new Circle(500, 500, radius, 'green', {x: -1, y: -1, magnitude: 1});
 
     circles.push(circle1, circle2);
 }
 
 function updatePhysics() {
-    if (getDistance(circles[0], circles[1]) < radius * 2) {
-        circles.forEach( circle => {
-            circle.color = "red";
-        })
-    }
-
-    circles.forEach( circle => {
+    circles.forEach( (circle, i) => {
+        if (i === 0) {
+            circle.checkCollision(circles[1]);
+        }
         circle.x += circle.velocity.x * circle.velocity.magnitude;
         circle.y += circle.velocity.y * circle.velocity.magnitude;
     });
@@ -64,4 +67,5 @@ function animate() {
     draw();
 }
 
+initCircles();
 animate();
