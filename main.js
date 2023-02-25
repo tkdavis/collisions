@@ -88,17 +88,28 @@ function initCircles() {
     let circle2 = new Circle(500, 500, radius, 'green', {x: -1, y: -1, magnitude: 1});
 
     circles.push(circle1, circle2);*/
+
     for (let i = 0; i < 1300; i++) {
+        let randomAngle = Math.random() * (2 * Math.PI - 1) + 1;
+        let randomDirection = {x: Math.cos(randomAngle), y: Math.sin(randomAngle)};
+ 
         let circle = new Circle(
             getRandomInt(canvas.width),
             getRandomInt(canvas.height),
             radius,
             'green',
-            {x: 1, y: 1, magnitude: 1}
+            {x: randomDirection.x, y: randomDirection.y, magnitude: 1}
         )
         circles.push(circle);
         sweepAndPrune.addCircle(circle);
     }
+    
+    // Reroll Overlaps
+    sweepAndPrune.update();
+    sweepAndPrune.overlaps.forEach(overlapSet => {
+        overlapSet[0].x = getRandomInt(canvas.width);
+        overlapSet[0].y = getRandomInt(canvas.height);
+    });
 }
 
 function updatePhysics() {
