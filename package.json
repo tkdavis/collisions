@@ -2,8 +2,10 @@
   "name": "collisions",
   "version": "1.0.0",
   "description": "",
+  "source": "index.html",
   "main": "main.js",
   "scripts": {
+    "start": "parcel",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
