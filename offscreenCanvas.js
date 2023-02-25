@@ -90,16 +90,16 @@ onmessage = (evt) => {
     
         circles.push(circle1, circle2);*/
     
-        for (let i = 0; i < 3000; i++) {
+        for (let i = 0; i < 800; i++) {
             let randomAngle = Math.random() * (2 * Math.PI - 1) + 1;
             let randomDirection = {x: Math.cos(randomAngle), y: Math.sin(randomAngle)};
      
             let circle = new Circle(
                 getRandomInt(canvas.width),
                 getRandomInt(canvas.height),
-                radius,
+                getRandomInt(2) + radius,
                 'green',
-                {x: randomDirection.x, y: randomDirection.y, magnitude: 1}
+                {x: randomDirection.x, y: randomDirection.y, magnitude: getRandomInt(3)+1}
             )
             circles.push(circle);
             sweepAndPrune.addCircle(circle);
