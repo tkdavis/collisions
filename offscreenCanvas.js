@@ -5,7 +5,7 @@ onmessage = (evt) => {
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
     const radius = 1;
-    const numOfCircles = 500;
+    const numOfCircles = 300;
     let circles = [];
 
     class Circle {
