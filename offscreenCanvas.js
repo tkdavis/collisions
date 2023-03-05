@@ -5,6 +5,7 @@ onmessage = (evt) => {
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
     const radius = 1;
+    const numOfCircles = 500;
     let circles = [];
 
     class Circle {
@@ -12,6 +13,7 @@ onmessage = (evt) => {
             this.x = x;
             this.y = y;
             this.radius = radius;
+            this.mass = radius;
             this.color = color;
             this.velocity = velocity;
             this.left = this.x - this.radius;
@@ -21,14 +23,62 @@ onmessage = (evt) => {
         }
 
         checkCollision(other) {
-            if (getDistance(other, this) < this.radius * 2) {
+            if (getDistance(other, this) < this.radius + other.radius) {
                 this.changeColor();
                 other.changeColor();
+                this.resolveCollision(this, other);
+            }
+        }
+
+        rotate(velocity, angle) {
+            const rotatedVelocities = {
+                x: velocity.x * Math.cos(angle) - velocity.y * Math.sin(angle),
+                y: velocity.x * Math.sin(angle) + velocity.y * Math.cos(angle)
+            };
+
+            return rotatedVelocities;
+        }
+
+        resolveCollision(circle, otherCircle) {
+            const xVelocityDiff = circle.velocity.x - otherCircle.velocity.x;
+            const yVelocityDiff = circle.velocity.y - otherCircle.velocity.y;
+
+            const xDist = otherCircle.x - circle.x;
+            const yDist = otherCircle.y - circle.y;
+
+            // Prevent accidental overlap of circles
+            if (xVelocityDiff * xDist + yVelocityDiff * yDist >= 0) {
+
+                // Grab angle between the two colliding circles
+                const angle = -Math.atan2(otherCircle.y - circle.y, otherCircle.x - circle.x);
+
+                // Store mass for better readability
+                const m1 = circle.mass;
+                const m2 = otherCircle.mass;
+
+                // Velocity before equation
+                const u1 = this.rotate(circle.velocity, angle);
+                const u2 = this.rotate(otherCircle.velocity, angle);
+
+                // Velocity after 1d collision equation
+                const v1 = { x: u1.x * (m1 - m2) / (m1 + m2) + u2.x * 2 * m2 / (m1 + m2), y: u1.y };
+                const v2 = { x: u2.x * (m1 - m2) / (m1 + m2) + u1.x * 2 * m2 / (m1 + m2), y: u2.y };
+
+                // Final velocity after rotating axis back to original location
+                const vFinal1 = this.rotate(v1, -angle);
+                const vFinal2 = this.rotate(v2, -angle);
+
+                // Swap circle velocities for elastic physics effect 
+                circle.velocity.x = vFinal1.x;
+                circle.velocity.y = vFinal1.y;
+
+                otherCircle.velocity.x = vFinal2.x;
+                otherCircle.velocity.y = vFinal2.y;
             }
         }
 
         intersects(other) {
-            return getDistance(other, this) < this.radius * 2;
+            return getDistance(other, this) < this.radius + other.radius;
         }
 
         update() {
@@ -85,22 +135,27 @@ onmessage = (evt) => {
     //document.body.appendChild(stats.dom);
     
     function initCircles() {
-        /*let circle1 = new Circle(100, 100, radius, 'blue', {x: 1, y: 1, magnitude: 1});
-        let circle2 = new Circle(500, 500, radius, 'green', {x: -1, y: -1, magnitude: 1});
-    
-        circles.push(circle1, circle2);*/
-    
-        for (let i = 0; i < 800; i++) {
+        for (let i = 0; i < numOfCircles; i++) {
             let randomAngle = Math.random() * (2 * Math.PI - 1) + 1;
             let randomDirection = {x: Math.cos(randomAngle), y: Math.sin(randomAngle)};
-     
+
             let circle = new Circle(
                 getRandomInt(canvas.width),
                 getRandomInt(canvas.height),
-                getRandomInt(2) + radius,
+                getRandomInt(12) + radius,
                 'green',
-                {x: randomDirection.x, y: randomDirection.y, magnitude: getRandomInt(3)+1}
+                {x: randomDirection.x, y: randomDirection.y, magnitude: getRandomInt(6)+3}
             )
+            //todo: move this logic somewhere better
+            circle.mass = circle.radius;
+
+            for (let j = 0; j < circles.length; j++) {
+                if (circle.intersects(circles[j])) {
+                    circle.x = getRandomInt(canvas.width);
+                    circle.y = getRandomInt(canvas.height);
+                    j = -1;
+                }
+            }
             circles.push(circle);
             sweepAndPrune.addCircle(circle);
         }
@@ -114,25 +169,10 @@ onmessage = (evt) => {
     }
     
     function updatePhysics() {
-        /*testing*/
-        //console.table(sweepAndPrune.overlaps);
         sweepAndPrune.overlaps.forEach( overlap => {
-            overlap.forEach( circle => {
-                circle.velocity.x *= -1;
-                circle.velocity.y *= -1;
-            });
+            overlap[0].checkCollision(overlap[1]);
         });
         
-        /* naive approach example n^2 */
-        /*circles.forEach((circle1, i ) => {
-            circles.forEach((circle2, j) => {
-                if (i !== j && circle1.intersects(circle2)) {
-                    circle1.velocity.x *= -1;
-                    circle1.velocity.y *= -1;
-                }
-            })
-        })*/
-    
         circles.forEach( (circle, i) => {
             let x = circle.x;
             let y = circle.y;
@@ -152,7 +192,6 @@ onmessage = (evt) => {
             circle.update();
         });
     
-        // this could be done more optimally.
         sweepAndPrune.sortCircles();
     }
     
@@ -171,7 +210,7 @@ onmessage = (evt) => {
         context.clearRect(0, 0, canvas.width, canvas.height);
         circles.forEach( circle => {
             context.beginPath();
-            context.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI, false);
+            context.arc(Math.floor(circle.x), Math.floor(circle.y), circle.radius, 0, 2 * Math.PI, false);
             context.closePath();
             context.fillStyle = circle.color;
             context.fill();
@@ -182,8 +221,8 @@ onmessage = (evt) => {
         requestAnimationFrame(animate);
         //stats.begin();
         sweepAndPrune.update();
-        updatePhysics();
         draw();
+        updatePhysics();
         //stats.end();
     }
     
